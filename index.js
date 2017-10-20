@@ -13,7 +13,7 @@ let parse = (input) => {
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i]
 
-    if (line.test(comment)) continue
+    if (!line || comment.test(line)) continue
 
     if (line.indexOf('  ') === 0) {
       if (!task) {
@@ -24,12 +24,7 @@ let parse = (input) => {
       } else {
         task.commands.push(line.slice(2))
       }
-    } else if (!line) {
-      if (task) {
-        tasks.push(task)
-        task = null
-      }
-    } else if (!task) {
+    } else if (line[0] + line[1] !== '  ') {
       let deps = line.split(' ')
       let name = deps.shift()
       if (name[name.length-1] === ':') {
@@ -50,6 +45,11 @@ let parse = (input) => {
 let run = (tasks, taskName) => {
   if (taskName[0] === '@') taskName = taskName.slice(1)
   let task = tasks.find(x => x.name === taskName)
+
+  if (!task) {
+    throw new Error(`Unknown task ${taskname}`)
+  }
+
   let deps = task.deps
   let pre = Promise.resolve(true)
 
@@ -69,7 +69,7 @@ let run = (tasks, taskName) => {
     let master = Promise.resolve(true)
     for (let c = 0; c < task.commands.length; c++) {
       (command => {
-        master = master.then(() => new Promise((resolve, reject) => {
+        next = new Promise((resolve, reject) => {
           const proc = child_process.exec(command, {
             maxBuffer: Infinity,
             encoding: 'buffer',
@@ -80,7 +80,13 @@ let run = (tasks, taskName) => {
           proc.on('error', err => reject(err))
           proc.stdout.pipe(process.stdout)
           proc.stderr.pipe(process.stderr)
-        }))
+        })
+
+        if (command[command.length - 1] === '&') {
+          master = Promise.all([master, next])
+        } else {
+          master = master.then(() => next)
+        }
       })(task.commands[c])
     }
   })
