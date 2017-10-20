@@ -89,6 +89,7 @@ let run = (tasks, taskName) => {
         }
       })(task.commands[c])
     }
+    return master
   })
 }
 

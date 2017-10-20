@@ -9,6 +9,7 @@ Using `build` is a lot like `make`, but there are some key differences:
  - The `node_modules/.bin` is automatically in the path.
  - Parallel deps are part of the syntax, not the CLI.
  - Command input can be continued on subsequent lines using a 4 space indent.
+ - A lot more simplistic than GNU Make, does not include fancy features.
 
 ## Install
 
